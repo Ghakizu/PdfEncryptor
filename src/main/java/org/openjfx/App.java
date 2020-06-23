@@ -28,7 +28,7 @@ import java.util.Optional;
 public class App extends Application {
 
     @Override
-    public void start(Stage stage) throws IOException {
+    public void start(Stage stage) {
         initUI(stage);
     }
 
@@ -54,7 +54,7 @@ public class App extends Application {
 
         // File chooser button
         final Button fileButton = new Button("Select pdf");
-        fileButton.setOnAction(new EventHandler<ActionEvent>() {
+        fileButton.setOnAction(new EventHandler<>() {
             @Override
             public void handle(ActionEvent actionEvent) {
                 paths.clear();
@@ -74,9 +74,17 @@ public class App extends Application {
 
         // Encrypt Button
         Button encryptButton = new Button("Encrypt");
-        encryptButton.setOnAction(new EventHandler<ActionEvent>() {
+        encryptButton.setOnAction(new EventHandler<>() {
             @Override
             public void handle(ActionEvent actionEvent) {
+                if (files.isEmpty()) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Erreur");
+                    alert.setHeaderText("Une erreur est survenue");
+                    alert.setContentText("Aucun fichier n'a été spécifié");
+
+                    alert.showAndWait();
+                }
                 PasswordDialog pd  = new PasswordDialog();
                 Optional<String> result = pd.showAndWait();
                 if (result.isPresent())
