@@ -41,7 +41,8 @@ runtime {
                                 '--win-dir-chooser',
                                 '--win-menu',
                                 '--win-shortcut',
-                                '--description', 'Pdf Encryptor',]
+                                '--description', 'Pdf Encryptor',
+                                '--vendor', 'Constant Malanda']
         }
     }
 }
