@@ -6,7 +6,14 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.control.*;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -18,7 +25,12 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 
+import org.apache.commons.io.FilenameUtils;
+
+import java.awt.*;
 import java.io.*;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +44,7 @@ public class App extends Application {
         initUI(stage);
     }
 
-    List<File> files;
+    List<File> files = new ArrayList<>();
 
     private void initUI(Stage stage) {
         final FileChooser fileChooser = new FileChooser();
@@ -54,21 +66,10 @@ public class App extends Application {
 
         // File chooser button
         final Button fileButton = new Button("Select pdf");
-        fileButton.setOnAction(new EventHandler<>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                paths.clear();
-                files = fileChooser.showOpenMultipleDialog(stage);
-                printPaths(paths, files);
-            }
-
-            private void printPaths(TextField paths, List<File> files) {
-                if (files == null || files.isEmpty())
-                    return;
-                for(File file : files) {
-                    paths.appendText(file.getAbsolutePath() + ";");
-                }
-            }
+        fileButton.setOnAction(actionEvent -> {
+            paths.clear();
+            files = fileChooser.showOpenMultipleDialog(stage);
+            printPaths(paths, files);
         });
         hb.getChildren().add(fileButton);
 
@@ -77,7 +78,8 @@ public class App extends Application {
         encryptButton.setOnAction(new EventHandler<>() {
             @Override
             public void handle(ActionEvent actionEvent) {
-                if (files.isEmpty()) {
+                if (paths.getText().isEmpty()) {
+                    // Show Error Alert if no file is selected
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Erreur");
                     alert.setHeaderText("Une erreur est survenue");
@@ -85,32 +87,81 @@ public class App extends Application {
 
                     alert.showAndWait();
                 }
-                PasswordDialog pd  = new PasswordDialog();
-                Optional<String> result = pd.showAndWait();
-                if (result.isPresent())
-                {
-                    String password = result.get();
-                    PDDocument pdf;
-                    int encrypted = 0;
-                    for (File file : files) {
-                        try {
-                            pdf = Encryptor.encrypt(file, password);
-                            pdf.save(removeExtension(file) + "_encrypted.pdf");
-                            encrypted++;
-                        }
-                        catch (FileNotFoundException e){
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
-                            alert.setTitle("Erreur");
-                            alert.setHeaderText("Une erreur est survenue");
-                            alert.setContentText("Impossible de trouver le fichier " + file.getName());
+                else {
+                    PasswordDialog pd = new PasswordDialog();
+                    Optional<String> result = pd.showAndWait();
+                    if (result.isPresent()) {
+                        String password = result.get();
+                        PDDocument pdf;
+                        int encrypted = 0;
+                        for (File file : files) {
+                            try {
+                                pdf = Encryptor.encrypt(file, password);
+                                pdf.save(removeExtension(file) + "_encrypted.pdf");
+                                pdf.close();
+                                encrypted++;
+                            } catch (FileNotFoundException e) {
+                                Alert alert = new Alert(Alert.AlertType.ERROR);
+                                alert.setTitle("Erreur");
+                                alert.setHeaderText("Une erreur est survenue");
+                                alert.setContentText("Impossible de trouver le fichier " + file.getName());
 
-                            alert.showAndWait();
+                                alert.showAndWait();
+                            } catch (Exception e) {
+                                // Show Error Alert + stacktrace if there is an unknown error
+                                Alert alert = new Alert(Alert.AlertType.ERROR);
+                                alert.setTitle("Erreur");
+                                alert.setHeaderText("Une erreur est survenue");
+                                alert.setContentText("Impossible d'encrypter le fichier " + file.getName());
+
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                e.printStackTrace(pw);
+                                String exceptionText = sw.toString();
+
+                                Label label = new Label("The exception stacktrace was:");
+
+                                TextArea textArea = new TextArea(exceptionText);
+                                textArea.setEditable(false);
+                                textArea.setWrapText(true);
+
+                                textArea.setMaxWidth(Double.MAX_VALUE);
+                                textArea.setMaxHeight(Double.MAX_VALUE);
+                                GridPane.setVgrow(textArea, Priority.ALWAYS);
+                                GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+                                GridPane expContent = new GridPane();
+                                expContent.setMaxWidth(Double.MAX_VALUE);
+                                expContent.add(label, 0, 0);
+                                expContent.add(textArea, 0, 1);
+
+                                // Set expandable Exception into the dialog pane.
+                                alert.getDialogPane().setExpandableContent(expContent);
+
+                                alert.showAndWait();
+                            }
                         }
-                        catch (Exception e){
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
+
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Information Dialog");
+                        alert.setHeaderText(null);
+                        alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté");
+
+                        alert.showAndWait();
+                        // Open the out folder
+
+                        Desktop desktop = Desktop.getDesktop();
+                        if(desktop.isSupported(Desktop.Action.BROWSE))
+                        {
+                            try {
+                                URI output_dir = URI.create(System.getProperty("user.home") + "/PdfEncryptor/");
+                                desktop.browse(output_dir);
+                            } catch (IOException e) {
+
+                            // Show Error Alert + stacktrace if there is an unknown error
+                            alert = new Alert(Alert.AlertType.ERROR);
                             alert.setTitle("Erreur");
                             alert.setHeaderText("Une erreur est survenue");
-                            alert.setContentText("Impossible d'encrypter le fichier " + file.getName());
 
                             StringWriter sw = new StringWriter();
                             PrintWriter pw = new PrintWriter(sw);
@@ -138,17 +189,14 @@ public class App extends Application {
 
                             alert.showAndWait();
                         }
-                    }
-                    paths.clear();
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Information Dialog");
-                    alert.setHeaderText(null);
-                    alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté");
+                        }
 
-                    alert.showAndWait();
-                }
-                else  {
-                    System.out.println("No password");
+                        files.clear();
+                        paths.clear();
+
+                    } else {
+                        System.out.println("No password");
+                    }
                 }
             }
 
@@ -161,6 +209,28 @@ public class App extends Application {
         });
         vb.getChildren().add(hb);
         vb.getChildren().add(encryptButton);
+
+        // Drag'n'drop
+        vb.setOnDragOver(event -> {
+            event.acceptTransferModes(TransferMode.ANY);
+            System.out.println("Drag'n'drop detected");
+            event.consume();
+        });
+
+        vb.setOnDragDropped(event -> {
+            if (!event.getDragboard().hasFiles())
+                return;
+            List<File> draggedFiles = event.getDragboard().getFiles();
+            if (files.size() > 0)
+                files.clear();
+            for (File file : draggedFiles) {
+                if (FilenameUtils.getExtension(file.getName()).equals("pdf"))
+                    files.add(file);
+                printPaths(paths, files);
+            }
+            System.out.println("Got " + files.size() + " files");
+            event.consume();
+        });
 
         Scene scene =  new Scene(vb, 270, 100);
 
@@ -179,6 +249,14 @@ public class App extends Application {
 
         // Set Pdf extension filter
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+    }
+
+    private void printPaths(TextField paths, List<File> files) {
+        if (files == null || files.isEmpty())
+            return;
+        for(File file : files) {
+            paths.appendText(file.getAbsolutePath() + ";");
+        }
     }
 
     public static void main(String[] args) {
