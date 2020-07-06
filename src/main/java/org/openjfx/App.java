@@ -1,13 +1,9 @@
 package org.openjfx;
 
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -31,7 +27,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * JavaFX App
@@ -77,9 +72,9 @@ public class App extends Application {
         // Encrypt Button
         Button encryptButton = new Button("Encrypt");
         encryptButton.setOnAction(actionEvent -> {
+            // If no file is selected
             if (paths.getText().isEmpty()) {
-                // Show Error Alert if no file is selected
-                Alert alert = new Alert(Alert.AlertType.ERROR);
+                Alert alert = new  Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Erreur");
                 alert.setHeaderText("Une erreur est survenue");
                 alert.setContentText("Aucun fichier n'a été spécifié");
@@ -87,119 +82,60 @@ public class App extends Application {
                 alert.showAndWait();
             }
             else {
-                PasswordDialog pd = new PasswordDialog();
-                Optional<String> result = pd.showAndWait();
-                if (result.isPresent()) {
-                    String password = result.get();
-                    FileSystem fs = FileSystems.getDefault();
-                    Path userPath = fs.getPath(System.getProperty("user.home"), "Documents/PdfEncryptor");
-                    PDDocument pdf;
-                    int encrypted = 0;
-                    for (File file : files) {
-                        try {
-                            pdf = Encryptor.encrypt(file, password);
-                            new File(userPath.toUri()).mkdir();
-                            String filename = FilenameUtils.removeExtension(file.getName()) + "_encrypted.pdf";
-                            pdf.save(userPath.toString() + "/" + filename);
-                            pdf.close();
-                            encrypted++;
-                        } catch (FileNotFoundException e) {
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
-                            alert.setTitle("Erreur");
-                            alert.setHeaderText("Une erreur est survenue");
-                            alert.setContentText("Impossible de trouver le fichier " + file.getName());
+                // Generate a password with passay
+                String password = PwdGenerator.generatePassayPassword();
 
-                            alert.showAndWait();
-                        } catch (Exception e) {
-                            // Show Error Alert + stacktrace if there is an unknown error
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
-                            alert.setTitle("Erreur");
-                            alert.setHeaderText("Une erreur est survenue");
-                            alert.setContentText("Impossible d'encrypter le fichier " + file.getName());
+                // Encrypt all file in the list
+                FileSystem fs = FileSystems.getDefault();
+                Path userPath = fs.getPath(System.getProperty("user.home"), "Documents/PdfEncryptor");
+                PDDocument pdf;
+                int encrypted = 0;
+                for (File file : files) {
+                    try {
+                        pdf = Encryptor.encrypt(file, password);
+                        new File(userPath.toUri()).mkdir();
+                        String filename = FilenameUtils.removeExtension(file.getName()) + "_encrypted.pdf";
+                        pdf.save(userPath.toString() + "/" + filename);
+                        pdf.close();
+                        encrypted++;
+                    } catch (FileNotFoundException e) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Erreur");
+                        alert.setHeaderText("Une erreur est survenue");
+                        alert.setContentText("Impossible de trouver le fichier " + file.getName());
 
-                            StringWriter sw = new StringWriter();
-                            PrintWriter pw = new PrintWriter(sw);
-                            e.printStackTrace(pw);
-                            String exceptionText = sw.toString();
+                        alert.showAndWait();
+                    } catch (Exception e) {
+                        // Show Error Alert + stacktrace if there is an unknown error
+                        Alert alert = BacktraceDialog(e);
+                        alert.setContentText("Impossible d'encrypter le fichier " + file.getName());
 
-                            Label label = new Label("The exception stacktrace was:");
-
-                            TextArea textArea = new TextArea(exceptionText);
-                            textArea.setEditable(false);
-                            textArea.setWrapText(true);
-
-                            textArea.setMaxWidth(Double.MAX_VALUE);
-                            textArea.setMaxHeight(Double.MAX_VALUE);
-                            GridPane.setVgrow(textArea, Priority.ALWAYS);
-                            GridPane.setHgrow(textArea, Priority.ALWAYS);
-
-                            GridPane expContent = new GridPane();
-                            expContent.setMaxWidth(Double.MAX_VALUE);
-                            expContent.add(label, 0, 0);
-                            expContent.add(textArea, 0, 1);
-
-                            // Set expandable Exception into the dialog pane.
-                            alert.getDialogPane().setExpandableContent(expContent);
-
-                            alert.showAndWait();
-                        }
+                        alert.showAndWait();
                     }
-
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Information Dialog");
-                    alert.setHeaderText(null);
-                    alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté");
-
-                    alert.showAndWait();
-                    // Open the out folder
-
-                    Desktop desktop = Desktop.getDesktop();
-                    if(desktop.isSupported(Desktop.Action.BROWSE) && encrypted > 0)
-                    {
-                        try {
-                            desktop.browse(userPath.toUri());
-                        } catch (Exception e) {
-
-                            // Show Error Alert + stacktrace if there is an unknown error
-                            alert = new Alert(Alert.AlertType.ERROR);
-                            alert.setTitle("Erreur");
-                            alert.setHeaderText("Une erreur est survenue");
-
-                            StringWriter sw = new StringWriter();
-                            PrintWriter pw = new PrintWriter(sw);
-                            e.printStackTrace(pw);
-                            String exceptionText = sw.toString();
-
-                            Label label = new Label("The exception stacktrace was:");
-
-                            TextArea textArea = new TextArea(exceptionText);
-                            textArea.setEditable(false);
-                            textArea.setWrapText(true);
-
-                            textArea.setMaxWidth(Double.MAX_VALUE);
-                            textArea.setMaxHeight(Double.MAX_VALUE);
-                            GridPane.setVgrow(textArea, Priority.ALWAYS);
-                            GridPane.setHgrow(textArea, Priority.ALWAYS);
-
-                            GridPane expContent = new GridPane();
-                            expContent.setMaxWidth(Double.MAX_VALUE);
-                            expContent.add(label, 0, 0);
-                            expContent.add(textArea, 0, 1);
-
-                            // Set expandable Exception into the dialog pane.
-                            alert.getDialogPane().setExpandableContent(expContent);
-
-                            alert.showAndWait();
-                        }
-                    }
-
-                    paths.clear();
-
-                } else {
-                    System.out.println("No password");
                 }
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Information Dialog");
+                alert.setHeaderText(null);
+                alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté");
+
+                alert.showAndWait();
+                // Open the out folder
+
+                Desktop desktop = Desktop.getDesktop();
+                if(desktop.isSupported(Desktop.Action.BROWSE) && encrypted > 0)
+                {
+                    try {
+                        desktop.browse(userPath.toUri());
+                    } catch (Exception e) {
+                        alert = BacktraceDialog(e);
+                        alert.showAndWait();
+                    }
+                }
+
+                paths.clear();
             }
         });
+
         vb.getChildren().add(hb);
         vb.getChildren().add(encryptButton);
 
@@ -256,39 +192,39 @@ public class App extends Application {
         launch();
     }
 
-}
+    private Alert BacktraceDialog(Exception e) {
 
-class PasswordDialog extends Dialog<String> {
-    private final PasswordField passwordField;
+        // Show Error Alert + stacktrace if there is an unknown error
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Erreur");
+        alert.setHeaderText("Une erreur est survenue");
 
-    public PasswordDialog() {
-        setTitle("Password");
-        setHeaderText("Please enter your password.");
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        String exceptionText = sw.toString();
 
-        ButtonType passwordButtonType = new ButtonType("Decrypt", ButtonBar.ButtonData.OK_DONE);
-        getDialogPane().getButtonTypes().addAll(passwordButtonType, ButtonType.CANCEL);
+        Label label = new Label("The exception stacktrace was:");
 
-        passwordField = new PasswordField();
-        passwordField.setPromptText("Password");
+        TextArea textArea = new TextArea(exceptionText);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
 
-        HBox hBox = new HBox();
-        hBox.getChildren().add(passwordField);
-        hBox.setPadding(new Insets(20));
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
 
-        HBox.setHgrow(passwordField, Priority.ALWAYS);
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
 
-        getDialogPane().setContent(hBox);
+        // Set expandable Exception into the dialog pane.
+        alert.getDialogPane().setExpandableContent(expContent);
 
-        Platform.runLater(passwordField::requestFocus);
-
-        setResultConverter(dialogButton -> {
-            if (passwordButtonType == dialogButton) return passwordField.getText();
-            return null;
-        });
+        return alert;
     }
 
-    public PasswordField getPasswordField() {
-        return passwordField;
-    }
 }
 
