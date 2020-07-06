@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * JavaFX App
+ * Encrypteur et Decrypteur de PDF
  * @author Constant Malanda
  *
  */
@@ -51,14 +51,16 @@ public class App extends Application {
         vb.setSpacing(10);
         vb.setPadding(new Insets(15,20, 10,10));
 
-        final HBox hb = new HBox();
-        hb.setSpacing(10);
+        final HBox hb1 = new HBox();
+        final HBox hb2 = new HBox();
+        hb1.setSpacing(10);
+        hb2.setSpacing(10);
 
 
         // Path field area
         final TextField paths = new TextField("");
         paths.setMinWidth(120);
-        hb.getChildren().add(paths);
+        hb1.getChildren().add(paths);
 
         // File chooser button
         final Button fileButton = new Button("Select pdf");
@@ -67,7 +69,7 @@ public class App extends Application {
             files = fileChooser.showOpenMultipleDialog(stage);
             printPaths(paths, files);
         });
-        hb.getChildren().add(fileButton);
+        hb1.getChildren().add(fileButton);
 
         // Encrypt Button
         Button encryptButton = new Button("Encrypt");
@@ -93,10 +95,12 @@ public class App extends Application {
                 for (File file : files) {
                     try {
                         pdf = Encryptor.encrypt(file, password);
+
                         new File(userPath.toUri()).mkdir();
                         String filename = FilenameUtils.removeExtension(file.getName()) + "_encrypted.pdf";
                         pdf.save(userPath.toString() + "/" + filename);
                         pdf.close();
+
                         encrypted++;
                     } catch (FileNotFoundException e) {
                         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -116,11 +120,13 @@ public class App extends Application {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Information Dialog");
                 alert.setHeaderText(null);
-                alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté");
+                alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté" +
+                        "\nLe mot de passe utilisé est : " + password +
+                        "\n ATTENTION : Ce mot de passe ne s'affichera plus n'oubliez pas de le noter si besoin");
 
                 alert.showAndWait();
-                // Open the out folder
 
+                // open the output folder
                 Desktop desktop = Desktop.getDesktop();
                 if(desktop.isSupported(Desktop.Action.BROWSE) && encrypted > 0)
                 {
@@ -136,8 +142,17 @@ public class App extends Application {
             }
         });
 
-        vb.getChildren().add(hb);
-        vb.getChildren().add(encryptButton);
+        vb.getChildren().add(hb1);
+        hb2.getChildren().add(encryptButton);
+
+        //Decrypt Button
+        Button decryptButton = new Button("Decrypt");
+        decryptButton.setOnAction(actionEvent -> {
+            // TODO
+        });
+
+        hb2.getChildren().add(decryptButton);
+        vb.getChildren().add(hb2);
 
         // Drag'n'drop
         vb.setOnDragOver(event -> {
@@ -225,6 +240,5 @@ public class App extends Application {
 
         return alert;
     }
-
 }
 
