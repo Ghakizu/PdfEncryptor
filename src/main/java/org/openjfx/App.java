@@ -1,9 +1,11 @@
 package org.openjfx;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -27,6 +29,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Encrypteur et Decrypteur de PDF
@@ -148,7 +151,64 @@ public class App extends Application {
         //Decrypt Button
         Button decryptButton = new Button("Decrypt");
         decryptButton.setOnAction(actionEvent -> {
-            // TODO
+            if (paths.getText().isEmpty()) {
+                Alert alert = new  Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Erreur");
+                alert.setHeaderText("Une erreur est survenue");
+                alert.setContentText("Aucun fichier n'a été spécifié");
+
+                alert.showAndWait();
+            }
+            else {
+                PasswordDialog passwordDialog = new PasswordDialog();
+                Optional<String> result = passwordDialog.showAndWait();
+                int decrypted = 0;
+                if (result.isPresent()) {
+                    String decryptPassword = result.get();
+                    PDDocument pdDocument;
+                    for (File file : files) {
+                        try {
+                            pdDocument = Encryptor.decrypt(file, decryptPassword);
+                            pdDocument.save(file);
+                            pdDocument.close();
+
+                            decrypted++;
+                        } catch (FileNotFoundException e) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Erreur");
+                            alert.setHeaderText("Une erreur est survenue");
+                            alert.setContentText("Impossible de trouver le fichier " + file.getName());
+
+                            alert.showAndWait();
+                        } catch (Exception e) {
+                            // Show Error Alert + stacktrace if there is an unknown error
+                            Alert alert = BacktraceDialog(e);
+                            alert.setContentText("Impossible de décrypter le fichier " + file.getName());
+
+                            alert.showAndWait();
+                        }
+                    }
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Information Dialog");
+                    alert.setHeaderText(null);
+                    alert.setContentText(decrypted + " sur " + files.size() + " fichiers ont pu être décrypté avec ce mot de passe");
+
+                    alert.showAndWait();
+
+                    // open the output folder
+                    Desktop desktop = Desktop.getDesktop();
+                    if (desktop.isSupported(Desktop.Action.BROWSE) && decrypted > 0) {
+                        try {
+                            desktop.browse(files.get(0).toURI());
+                        } catch (Exception e) {
+                            alert = BacktraceDialog(e);
+                            alert.showAndWait();
+                        }
+                    }
+
+                    paths.clear();
+                }
+            }
         });
 
         hb2.getChildren().add(decryptButton);
@@ -239,6 +299,40 @@ public class App extends Application {
         alert.getDialogPane().setExpandableContent(expContent);
 
         return alert;
+    }
+}
+
+class PasswordDialog extends Dialog<String> {
+    private final PasswordField passwordField;
+
+    public PasswordDialog() {
+        setTitle("Password");
+        setHeaderText("Please enter your password.");
+
+        ButtonType passwordButtonType = new ButtonType("Decrypt", ButtonBar.ButtonData.OK_DONE);
+        getDialogPane().getButtonTypes().addAll(passwordButtonType, ButtonType.CANCEL);
+
+        passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+
+        HBox hBox = new HBox();
+        hBox.getChildren().add(passwordField);
+        hBox.setPadding(new Insets(20));
+
+        HBox.setHgrow(passwordField, Priority.ALWAYS);
+
+        getDialogPane().setContent(hBox);
+
+        Platform.runLater(passwordField::requestFocus);
+
+        setResultConverter(dialogButton -> {
+            if (passwordButtonType == dialogButton) return passwordField.getText();
+            return null;
+        });
+    }
+
+    public PasswordField getPasswordField() {
+        return passwordField;
     }
 }
 
