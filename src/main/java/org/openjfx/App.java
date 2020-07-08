@@ -50,8 +50,6 @@ public class App extends Application {
     List<File> files = new ArrayList<>();
 
     private void initUI(Stage stage) {
-        final FileChooser fileChooser = new FileChooser();
-        setupFileChooser(fileChooser);
 
         // Init Box
         final VBox vb = new VBox();
@@ -63,160 +61,23 @@ public class App extends Application {
         hb1.setSpacing(10);
         hb2.setSpacing(10);
 
-
         // Path field area
         final TextField paths = new TextField("");
         paths.setMinWidth(120);
         hb1.getChildren().add(paths);
 
         // File chooser button
-        final Button fileButton = new Button("Select pdf");
-        fileButton.setOnAction(actionEvent -> {
-            paths.clear();
-            files = fileChooser.showOpenMultipleDialog(stage);
-            printPaths(paths, files);
-        });
+        Button fileButton = InitFileChooserButton(stage, paths);
         hb1.getChildren().add(fileButton);
 
         // Encrypt Button
-        Button encryptButton = new Button("Encrypt");
-        encryptButton.setOnAction(actionEvent -> {
-            // If no file is selected
-            if (paths.getText().isEmpty()) {
-                Alert alert = new  Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Erreur");
-                alert.setHeaderText("Une erreur est survenue");
-                alert.setContentText("Aucun fichier n'a été spécifié");
-
-                alert.showAndWait();
-            }
-            else {
-                // Generate a password with passay
-                String password = PwdGenerator.generatePassayPassword();
-
-                // Encrypt all file in the list
-                FileSystem fs = FileSystems.getDefault();
-                Path userPath = fs.getPath(System.getProperty("user.home"), "Documents/PdfEncryptor");
-                PDDocument pdf;
-                int encrypted = 0;
-                for (File file : files) {
-                    try {
-                        pdf = Encryptor.encrypt(file, password);
-
-                        new File(userPath.toUri()).mkdir();
-                        String filename = FilenameUtils.removeExtension(file.getName()) + "_encrypted.pdf";
-                        pdf.save(userPath.toString() + "/" + filename);
-                        pdf.close();
-
-                        encrypted++;
-                    } catch (FileNotFoundException e) {
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setTitle("Erreur");
-                        alert.setHeaderText("Une erreur est survenue");
-                        alert.setContentText("Impossible de trouver le fichier " + file.getName());
-
-                        alert.showAndWait();
-                    } catch (Exception e) {
-                        // Show Error Alert + stacktrace if there is an unknown error
-                        Alert alert = BacktraceDialog(e);
-                        alert.setContentText("Impossible d'encrypter le fichier " + file.getName());
-
-                        alert.showAndWait();
-                    }
-                }
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Information Dialog");
-                alert.setHeaderText(null);
-
-                String alertText = encrypted + " sur " + files.size() + " fichiers ont pu être encrypté" +
-                        "\nLe mot de passe utilisé est : ";
-
-                TextFlow flow = new TextFlow(new Text(alertText), buildPwdHyperlink(password));
-                alert.getDialogPane().setContent(flow);
-
-                alert.showAndWait();
-
-                // open the output folder
-                Desktop desktop = Desktop.getDesktop();
-                if(desktop.isSupported(Desktop.Action.BROWSE) && encrypted > 0)
-                {
-                    try {
-                        desktop.browse(userPath.toUri());
-                    } catch (Exception e) {
-                        alert = BacktraceDialog(e);
-                        alert.showAndWait();
-                    }
-                }
-
-                paths.clear();
-            }
-        });
+        Button encryptButton = InitEncryptButton(paths);
 
         vb.getChildren().add(hb1);
         hb2.getChildren().add(encryptButton);
 
         //Decrypt Button
-        Button decryptButton = new Button("Decrypt");
-        decryptButton.setOnAction(actionEvent -> {
-            if (paths.getText().isEmpty()) {
-                Alert alert = new  Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Erreur");
-                alert.setHeaderText("Une erreur est survenue");
-                alert.setContentText("Aucun fichier n'a été spécifié");
-
-                alert.showAndWait();
-            }
-            else {
-                PasswordDialog passwordDialog = new PasswordDialog();
-                Optional<String> result = passwordDialog.showAndWait();
-                int decrypted = 0;
-                if (result.isPresent()) {
-                    String decryptPassword = result.get();
-                    PDDocument pdDocument;
-                    for (File file : files) {
-                        try {
-                            pdDocument = Encryptor.decrypt(file, decryptPassword);
-                            pdDocument.save(file);
-                            pdDocument.close();
-
-                            decrypted++;
-                        } catch (FileNotFoundException e) {
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
-                            alert.setTitle("Erreur");
-                            alert.setHeaderText("Une erreur est survenue");
-                            alert.setContentText("Impossible de trouver le fichier " + file.getName());
-
-                            alert.showAndWait();
-                        } catch (Exception e) {
-                            // Show Error Alert + stacktrace if there is an unknown error
-                            Alert alert = BacktraceDialog(e);
-                            alert.setContentText("Impossible de décrypter le fichier " + file.getName());
-
-                            alert.showAndWait();
-                        }
-                    }
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Information Dialog");
-                    alert.setHeaderText(null);
-                    alert.setContentText(decrypted + " sur " + files.size() + " fichiers ont pu être décrypté avec ce mot de passe");
-
-                    alert.showAndWait();
-
-                    // open the output folder
-                    Desktop desktop = Desktop.getDesktop();
-                    if (desktop.isSupported(Desktop.Action.BROWSE) && decrypted > 0) {
-                        try {
-                            desktop.browse(files.get(0).toURI());
-                        } catch (Exception e) {
-                            alert = BacktraceDialog(e);
-                            alert.showAndWait();
-                        }
-                    }
-
-                    paths.clear();
-                }
-            }
-        });
+        Button decryptButton = InitDecryptButton(paths);
 
         hb2.getChildren().add(decryptButton);
         vb.getChildren().add(hb2);
@@ -251,6 +112,149 @@ public class App extends Application {
         stage.show();
     }
 
+    private Button InitEncryptButton(TextField paths) {
+        Button encryptButton = new Button("Encrypt");
+        encryptButton.setOnAction(actionEvent -> {
+            // If no file is selected
+            if (paths.getText().isEmpty()) {
+                Alert alert = new  Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Erreur");
+                alert.setHeaderText("Une erreur est survenue");
+                alert.setContentText("Aucun fichier n'a été spécifié");
+
+                alert.showAndWait();
+            }
+            else {
+                // Generate a password with Passay
+                String password = PwdGenerator.generatePassayPassword();
+
+                // Encrypt all file in the list
+                FileSystem fs = FileSystems.getDefault();
+                Path userPath = fs.getPath(System.getProperty("user.home"), "Documents/PdfEncryptor");
+                PDDocument pdf;
+                int encrypted = 0;
+                for (File file : this.files) {
+                    try {
+                        pdf = Encryptor.encrypt(file, password);
+
+                        new File(userPath.toUri()).mkdir();
+                        String filename = FilenameUtils.removeExtension(file.getName()) + "_encrypted.pdf";
+                        pdf.save(userPath.toString() + "/" + filename);
+                        pdf.close();
+
+                        encrypted++;
+                    } catch (FileNotFoundException e) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Erreur");
+                        alert.setHeaderText("Une erreur est survenue");
+                        alert.setContentText("Impossible de trouver le fichier " + file.getName());
+
+                        alert.showAndWait();
+                    } catch (Exception e) {
+                        // Show Error Alert + stacktrace if there is an unknown error
+                        Alert alert = BacktraceDialog(e);
+                        alert.setContentText("Impossible d'encrypter le fichier " + file.getName());
+
+                        alert.showAndWait();
+                    }
+                }
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Information Dialog");
+                alert.setHeaderText(null);
+
+                String alertText = encrypted + " sur " + this.files.size() + " fichiers ont pu être encrypté" +
+                        "\nLe mot de passe utilisé est : ";
+
+                TextFlow flow = new TextFlow(new Text(alertText), buildPwdHyperlink(password));
+                alert.getDialogPane().setContent(flow);
+
+                alert.showAndWait();
+
+                // open the output folder
+                Desktop desktop = Desktop.getDesktop();
+                if(desktop.isSupported(Desktop.Action.BROWSE) && encrypted > 0)
+                {
+                    try {
+                        desktop.browse(userPath.toUri());
+                    } catch (Exception e) {
+                        alert = BacktraceDialog(e);
+                        alert.showAndWait();
+                    }
+                }
+
+                paths.clear();
+            }
+        });
+
+        return encryptButton;
+    }
+
+    private Button InitDecryptButton(TextField paths) {
+        Button decryptButton = new Button("Decrypt");
+        decryptButton.setOnAction(actionEvent -> {
+            if (paths.getText().isEmpty()) {
+                Alert alert = new  Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Erreur");
+                alert.setHeaderText("Une erreur est survenue");
+                alert.setContentText("Aucun fichier n'a été spécifié");
+
+                alert.showAndWait();
+            }
+            else {
+                PasswordDialog passwordDialog = new PasswordDialog();
+                Optional<String> result = passwordDialog.showAndWait();
+                int decrypted = 0;
+                if (result.isPresent()) {
+                    String decryptPassword = result.get();
+                    PDDocument pdDocument;
+                    for (File file : this.files) {
+                        try {
+                            pdDocument = Encryptor.decrypt(file, decryptPassword);
+                            pdDocument.save(file);
+                            pdDocument.close();
+
+                            decrypted++;
+                        } catch (FileNotFoundException e) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Erreur");
+                            alert.setHeaderText("Une erreur est survenue");
+                            alert.setContentText("Impossible de trouver le fichier " + file.getName());
+
+                            alert.showAndWait();
+                        } catch (Exception e) {
+                            // Show Error Alert + stacktrace if there is an unknown error
+                            Alert alert = BacktraceDialog(e);
+                            alert.setContentText("Impossible de décrypter le fichier " + file.getName());
+
+                            alert.showAndWait();
+                        }
+                    }
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Information Dialog");
+                    alert.setHeaderText(null);
+                    alert.setContentText(decrypted + " sur " + this.files.size() + " fichiers ont pu être décrypté avec ce mot de passe");
+
+                    alert.showAndWait();
+
+                    // open the output folder
+                    Desktop desktop = Desktop.getDesktop();
+                    if (desktop.isSupported(Desktop.Action.BROWSE) && decrypted > 0) {
+                        try {
+                            desktop.browse(files.get(0).toURI());
+                        } catch (Exception e) {
+                            alert = BacktraceDialog(e);
+                            alert.showAndWait();
+                        }
+                    }
+
+                    paths.clear();
+                }
+            }
+        });
+
+        return decryptButton;
+    }
+
     private Hyperlink buildPwdHyperlink(String password) {
         Hyperlink pwdHyperlink = new Hyperlink(password);
 
@@ -271,7 +275,9 @@ public class App extends Application {
         alert.showAndWait();
     }
 
-    private void setupFileChooser(FileChooser fileChooser) {
+    private Button InitFileChooserButton(Stage stage, TextField paths) {
+        final FileChooser fileChooser = new FileChooser();
+
         // Set title for the file chooser
         fileChooser.setTitle("Select Pdf to encrypt");
 
@@ -280,6 +286,16 @@ public class App extends Application {
 
         // Set Pdf extension filter
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+
+        // Init file chooser Button
+        final Button fileButton = new Button("Select pdf");
+        fileButton.setOnAction(actionEvent -> {
+            paths.clear();
+            files = fileChooser.showOpenMultipleDialog(stage);
+            printPaths(paths, files);
+        });
+
+        return fileButton;
     }
 
     private void printPaths(TextField paths, List<File> files) {
