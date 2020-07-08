@@ -10,11 +10,15 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -123,9 +127,12 @@ public class App extends Application {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Information Dialog");
                 alert.setHeaderText(null);
-                alert.setContentText(encrypted + " sur " + files.size() + " fichiers ont pu être encrypté" +
-                        "\nLe mot de passe utilisé est : " + password +
-                        "\n ATTENTION : Ce mot de passe ne s'affichera plus n'oubliez pas de le noter si besoin");
+
+                String alertText = encrypted + " sur " + files.size() + " fichiers ont pu être encrypté" +
+                        "\nLe mot de passe utilisé est : ";
+
+                TextFlow flow = new TextFlow(new Text(alertText), buildPwdHyperlink(password));
+                alert.getDialogPane().setContent(flow);
 
                 alert.showAndWait();
 
@@ -244,6 +251,26 @@ public class App extends Application {
         stage.show();
     }
 
+    private Hyperlink buildPwdHyperlink(String password) {
+        Hyperlink pwdHyperlink = new Hyperlink(password);
+
+        pwdHyperlink.setOnAction(event -> PwdToClipboard(password));
+
+        return pwdHyperlink;
+    }
+
+    private void PwdToClipboard(String password) {
+        final Clipboard clipboard = Clipboard.getSystemClipboard();
+        final ClipboardContent content = new ClipboardContent();
+        content.putString(password);
+        clipboard.setContent(content);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText(null);
+        alert.setContentText("Le mot de passe a été copié dans le presse-papier");
+        alert.showAndWait();
+    }
+
     private void setupFileChooser(FileChooser fileChooser) {
         // Set title for the file chooser
         fileChooser.setTitle("Select Pdf to encrypt");
@@ -261,10 +288,6 @@ public class App extends Application {
         for(File file : files) {
             paths.appendText(file.getAbsolutePath() + ";");
         }
-    }
-
-    public static void main(String[] args) {
-        launch();
     }
 
     private Alert BacktraceDialog(Exception e) {
@@ -300,6 +323,10 @@ public class App extends Application {
 
         return alert;
     }
+
+    public static void main(String[] args) {
+        launch();
+    }
 }
 
 class PasswordDialog extends Dialog<String> {
@@ -329,10 +356,6 @@ class PasswordDialog extends Dialog<String> {
             if (passwordButtonType == dialogButton) return passwordField.getText();
             return null;
         });
-    }
-
-    public PasswordField getPasswordField() {
-        return passwordField;
     }
 }
 
