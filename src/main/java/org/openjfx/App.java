@@ -31,9 +31,8 @@ import java.io.*;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Encrypteur et Decrypteur de PDF
@@ -47,7 +46,7 @@ public class App extends Application {
         initUI(stage);
     }
 
-    List<File> files = new ArrayList<>();
+    List<File> files = new LinkedList<>();
 
     private void initUI(Stage stage) {
 
@@ -92,13 +91,11 @@ public class App extends Application {
         vb.setOnDragDropped(event -> {
             if (!event.getDragboard().hasFiles())
                 return;
-            List<File> draggedFiles = event.getDragboard().getFiles();
-            if (files.size() > 0)
-                files.clear();
-            for (File file : draggedFiles) {
+            this.files = event.getDragboard().getFiles();
+            for (File file : this.files) {
                 if (!FilenameUtils.getExtension(file.getName()).equals("pdf"))
-                    draggedFiles.remove(file);
-                printPaths(paths, draggedFiles);
+                    this.files.remove(file);
+                printPaths(paths, this.files);
             }
             System.out.println("Got " + files.size() + " files");
             event.consume();
@@ -374,4 +371,6 @@ class PasswordDialog extends Dialog<String> {
         });
     }
 }
+
+
 
