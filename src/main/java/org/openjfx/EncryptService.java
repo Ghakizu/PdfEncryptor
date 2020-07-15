@@ -3,14 +3,10 @@ package org.openjfx;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import javafx.concurrent.WorkerStateEvent;
 import javafx.scene.control.Alert;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
-import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.FileSystem;

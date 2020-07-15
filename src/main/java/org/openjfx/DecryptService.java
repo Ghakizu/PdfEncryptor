@@ -5,6 +5,7 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,7 +41,18 @@ public class DecryptService extends Service<Integer> {
                             Alert alert = new Alert(Alert.AlertType.ERROR);
                             alert.setTitle("Erreur");
                             alert.setHeaderText("Une erreur est survenue");
-                            alert.setContentText("Impossible de trouver le fichier " + file.getName());
+                            alert.setContentText("Impossible de trouver le fichier :" + file.getName());
+
+                            alert.showAndWait();
+                        });
+                    } catch(InvalidPasswordException e) {
+                        Platform.runLater(() -> {
+                            // Show Error Alert + stacktrace if there is an unknown error
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Erreur");
+                            alert.setHeaderText("Une erreur est survenue");
+                            alert.setContentText("Impossible de décrypter le fichier " + file.getName() +
+                                    "\nLe mot de passe est invalide");
 
                             alert.showAndWait();
                         });

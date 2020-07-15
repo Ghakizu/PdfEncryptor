@@ -23,16 +23,18 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
 import org.apache.commons.io.FilenameUtils;
 
 import java.awt.*;
-import java.io.*;
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Encrypteur et Decrypteur de PDF
@@ -296,14 +298,14 @@ class PasswordDialog extends Dialog<String> {
     private final PasswordField passwordField;
 
     public PasswordDialog() {
-        setTitle("Password");
-        setHeaderText("Please enter your password.");
+        setTitle("Mot de passe");
+        setHeaderText("Veuillez entrer un mot de passse.");
 
-        ButtonType passwordButtonType = new ButtonType("Decrypt", ButtonBar.ButtonData.OK_DONE);
+        ButtonType passwordButtonType = new ButtonType("Decryption", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(passwordButtonType, ButtonType.CANCEL);
 
         passwordField = new PasswordField();
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText("Mot de passe");
 
         HBox hBox = new HBox();
         hBox.getChildren().add(passwordField);
