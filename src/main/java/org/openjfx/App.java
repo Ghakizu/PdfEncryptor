@@ -231,7 +231,7 @@ public class App extends Application {
         fileChooser.setTitle("Select Pdf to encrypt");
 
         // Set Initial directory
-        fileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+        fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 
         // Set Pdf extension filter
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));

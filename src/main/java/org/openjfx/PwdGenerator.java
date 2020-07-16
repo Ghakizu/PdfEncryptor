@@ -5,6 +5,10 @@ import org.passay.CharacterRule;
 import org.passay.EnglishCharacterData;
 import org.passay.PasswordGenerator;
 
+/*
+    Password generator using passay library
+    It generate a 8 characters password with at least 2 lowercase character, 2 uppercase characters, 2 digits and 2 special charcter
+ */
 public class PwdGenerator {
     static public String generatePassayPassword() {
         PasswordGenerator gen = new PasswordGenerator();

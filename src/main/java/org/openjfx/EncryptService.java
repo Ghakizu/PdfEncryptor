@@ -16,6 +16,9 @@ import java.util.List;
 
 import static org.openjfx.App.BacktraceDialog;
 
+/*
+    Service to encrypt a file that call the fonction encrypt from the Encryptor class.
+ */
 public class EncryptService extends Service<Integer> {
     private final List<File> files;
     private final String password;

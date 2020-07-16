@@ -8,6 +8,9 @@ import java.io.File;
 import java.io.IOException;
 
 public class Encryptor {
+    /*
+        Encrypt a PDDocument
+     */
     static public PDDocument encrypt(File file, String pwd) throws IOException {
         PDDocument doc = PDDocument.load(file);
 
@@ -34,7 +37,9 @@ public class Encryptor {
 
         return doc;
     }
-
+    /*
+        Decrypt a PDDocument
+     */
     static public PDDocument decrypt(File file, String pwd) throws IOException{
         PDDocument doc;
         doc = PDDocument.load(file, pwd);
