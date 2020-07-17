@@ -21,6 +21,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.scene.image.Image;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
@@ -108,6 +109,7 @@ public class App extends Application {
         scene =  new Scene(vb, 270, 100);
 
         stage.setResizable(false);
+        stage.getIcons().add(new Image("file:src/main/resources/pdfencryptor.png"));
         stage.setTitle("PdfEncryptor");
         stage.setScene(scene);
         stage.show();

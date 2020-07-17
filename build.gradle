@@ -36,8 +36,8 @@ runtime {
             imageName = 'PdfEncryptor'
             //installerType = 'msi'
             installerName = 'PdfEncryptor'
-            resourceDir = file("$buildDir/resources")
-            imageOptions = ['--icon', '$resourceDir/pdfencryptor.ico',
+            resourceDir = file("build/resources")
+            imageOptions = ['--icon', 'src/main/resources/pdfencryptor.ico',
                             '--vendor', 'Constant Malanda']
             installerOptions = ['--win-per-user-install',
                                 '--win-dir-chooser',
